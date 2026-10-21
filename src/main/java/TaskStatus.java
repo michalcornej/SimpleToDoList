@@ -5,11 +5,11 @@
 
 public enum TaskStatus {
 
-    Completed ("splněn"),
-    NotCompleted ("nesplněn");
+    COMPLETED ("splněn"),
+    NOT_COMPLETED ("nesplněn");
 
     /** Textová reprezentace stavu úkolu */
-    private String text;
+    private final String text;
 
     /**
      * Konstruktor výčtového typu TaskStatus.

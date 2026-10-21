@@ -1,12 +1,11 @@
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Scanner;
 
 public class UserInput {
 
     /** Čte vstupy od uživatele */
-    private Scanner scanner = new Scanner(System.in);
+    private final Scanner scanner = new Scanner(System.in);
 
     /**
      * Získá vstup od uživatele jako řetězec.
@@ -16,9 +15,9 @@ public class UserInput {
         String input;
         do {
             System.out.print(prompt);
-            input = scanner.nextLine();
+            input = scanner.nextLine().trim();
         }
-        while (!isValidString(input));
+        while (input.isEmpty());
         return input;
     }
 
@@ -27,41 +26,28 @@ public class UserInput {
      * Opakuje se, dokud není vstup validní.
      */
     public int getIntInput(String prompt) {
-        int input;
         while (true) {
             try {
                 System.out.print(prompt);
-                input = Integer.parseInt(scanner.nextLine());
-                break;
+                return Integer.parseInt(scanner.nextLine().trim());
             } catch (NumberFormatException e) {
                 System.out.println("Neplatný vstup. Zadejte číslo.");
             }
         }
-        return input;
     }
 
     /**
      * Získá vstup od uživatele jako datum a čas.
      * Opakuje se, dokud není vstup validní.
      */
-    public LocalDateTime getDateTimeInput(String prompt){
-        LocalDateTime input;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    public LocalDateTime getDateTimeInput(String prompt) {
         while (true) {
             try {
                 System.out.print(prompt);
-                input = LocalDateTime.parse(scanner.nextLine(), formatter);
-                break;
+                return LocalDateTime.parse(scanner.nextLine().trim(), Task.DATE_FORMAT);
             } catch (DateTimeParseException e) {
                 System.out.println("Neplatný vstup. Zadejte datum a čas ve formátu yyyy-MM-dd HH:mm.");
             }
         }
-        return input;
     }
-
-    /**  Validace vstupu - ověření, zda není vstupní řetězec prázdný nebo null */
-    public boolean isValidString(String input) {
-        return input != null && !input.trim().isEmpty();
-    }
-
 }

@@ -2,15 +2,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Application {
 
-    /** Aktuální čas a datum */
-    LocalDateTime dateTime = LocalDateTime.now();
     /** Správce úkolů */
-    private TaskManager tasks = new TaskManager();
+    private final TaskManager tasks = new TaskManager();
     /** Instance pro vstup od uživatele */
-    private UserInput userInput = new UserInput();
+    private final UserInput userInput = new UserInput();
 
     /**
      * Spustí hlavní smyčku aplikace.
@@ -18,33 +18,28 @@ public class Application {
      */
     public void run() {
         tasks.loadTasksFromCSV();
+        System.out.println("VÍTEJTE V APLIKACI TO DO APP!");
         boolean running = true;
         while (running) {
-            System.out.println("VÍTEJTE V APLIKACI TO DO APP!");
-            System.out.println("Dnes je " + dateTime.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG, FormatStyle.SHORT)) + ".");
+            System.out.println("Dnes je " + LocalDateTime.now().format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG, FormatStyle.SHORT)) + ".");
             displayToDoTasks();
             printMenu();
             int choice = userInput.getIntInput("Vyberte možnost: ");
 
             switch (choice) {
                 case 1:
-                    /** Vytvoří nový úkol */
                     createNewTask();
                     break;
                 case 2:
-                    /** Zobrazí všechny úkoly*/
                     displayAllTasks();
                     break;
                 case 3:
-                    /** Nastaví úkol jako splněný */
                     setTaskAsCompleted();
                     break;
                 case 4:
-                    /** Smaže úkol */
                     removeTask();
                     break;
                 case 5:
-                    /** Ukončí aplikaci */
                     running = false;
                     break;
                 default:
@@ -66,10 +61,12 @@ public class Application {
     /** Vytvoří nový úkol na základě vstupu od uživatele */
     public void createNewTask() {
         String name = userInput.getStringInput("Zadejte název úkolu: ");
-        LocalDateTime completionDate = userInput.getDateTimeInput("Zadejte datum a čas pro splnění úkolu formátu yyyy-MM-dd HH:mm:");
+        while (tasks.findTask(name) != null) {
+            name = userInput.getStringInput("Úkol s tímto názvem už existuje. Zadejte jiný název: ");
+        }
+        LocalDateTime completionDate = userInput.getDateTimeInput("Zadejte datum a čas pro splnění úkolu ve formátu yyyy-MM-dd HH:mm: ");
 
-        Task task = new Task(name, completionDate);
-        tasks.addTask(task);
+        tasks.addTask(new Task(name, completionDate));
         tasks.saveTasksToCSV();
         System.out.println("Úkol byl úspěšně vytvořen.");
     }
@@ -88,8 +85,8 @@ public class Application {
         String searchedName = userInput.getStringInput("Zadejte název úkolu: ");
         Task task = tasks.findTask(searchedName);
 
-        if (task != null) { // Pokud je úkol nalezen
-            task.setStatus(TaskStatus.Completed);
+        if (task != null) {
+            task.setStatus(TaskStatus.COMPLETED);
             tasks.saveTasksToCSV();
             System.out.println("Úkol splněn!");
         } else {
@@ -110,23 +107,43 @@ public class Application {
         System.out.println();
     }
 
-    /** Zobrazí úkoly naplánované na dnešek a zítřek */
+    /** Zobrazí nesplněné úkoly, které jsou po termínu nebo naplánované na dnešek a zítřek */
     public void displayToDoTasks() {
-        LocalDate today = dateTime.toLocalDate();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = now.toLocalDate();
         LocalDate tomorrow = today.plusDays(1);
+
+        List<Task> overdue = new ArrayList<>();
+        List<Task> forToday = new ArrayList<>();
+        List<Task> forTomorrow = new ArrayList<>();
         for (Task task : tasks.getAllTasks()) {
-            LocalDate toDoday = task.getCompletionDate().toLocalDate();
-            if (toDoday.isEqual(today)) {
-                System.out.println("Úkoly na dnes: ");
-                System.out.println(task);
-            } else if (toDoday.isEqual(tomorrow)) {
-                System.out.println("Úkoly na zítra: ");
-                System.out.println(task);
+            if (task.getStatus() == TaskStatus.COMPLETED) {
+                continue;
+            }
+            LocalDateTime deadline = task.getCompletionDate();
+            if (deadline.isBefore(now)) {
+                overdue.add(task);
+            } else if (deadline.toLocalDate().isEqual(today)) {
+                forToday.add(task);
+            } else if (deadline.toLocalDate().isEqual(tomorrow)) {
+                forTomorrow.add(task);
             }
         }
+
+        printTaskGroup("Úkoly po termínu:", overdue);
+        printTaskGroup("Úkoly na dnes:", forToday);
+        printTaskGroup("Úkoly na zítra:", forTomorrow);
+    }
+
+    /** Vypíše skupinu úkolů s nadpisem, pokud skupina není prázdná */
+    private void printTaskGroup(String title, List<Task> group) {
+        if (group.isEmpty()) {
+            return;
+        }
+        System.out.println(title);
+        for (Task task : group) {
+            System.out.println(task);
+        }
+        System.out.println();
     }
 }
-
-
-
-
